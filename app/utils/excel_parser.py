@@ -11,10 +11,9 @@ def parse_quiz_questions(file_path: str):
 
     questions = []
     for _, row in df.iterrows():
-        question_text = row['Question'],
-        question_type = row['Type'].strip(
-        ).lower(),  # e.g., 'mcq', 'tf'
-        correct_answer = row['Answer']
+        question_text = str(row['Question']).strip()
+        question_type = str(row['Type']).strip().lower()  # e.g., 'mcq', 'tf'
+        correct_answer = str(row['Answer']).strip()
 
         if question_type == 'mcq':
             options = [

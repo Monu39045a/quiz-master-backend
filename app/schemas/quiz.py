@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from typing import Optional, List
 
@@ -11,22 +11,24 @@ class QuestionCreate(BaseModel):
 
 
 class QuestionResponse(BaseModel):
-    id: int
+    ques_id: int = Field(alias="id")
     quiz_id: int
     question_text: str
     question_type: str
-    options: Optional[List[str]] = None
+    options: List[str] = None
     correct_answer: str
 
     model_config = {
-        "from_attributes": True
+        "from_attributes": True,
+        "populate_by_name": True,
     }
 
 
 class QuizCreate(BaseModel):
     trainer_id: str
     title: str
-    scheduled_time: Optional[datetime] = None
+    start_time: datetime
+    end_time: datetime
     num_questions: int
     duration_minutes: int
 
@@ -35,12 +37,13 @@ class QuizResponse(BaseModel):
     id: int
     trainer_id: str
     title: str
-    scheduled_time: datetime
+    start_time: datetime
+    end_time: datetime
     num_questions: int
     duration_minutes: int
     status: str
     created_at: datetime
 
     model_config = {
-        "from_attributes": True
+        "from_attributes": True,
     }

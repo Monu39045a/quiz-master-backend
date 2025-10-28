@@ -15,10 +15,10 @@ class Quiz(Base):
     __tablename__ = "quizzes"
 
     id = Column(Integer, primary_key=True, index=True)
-    trainer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    trainer_id = Column(String, ForeignKey("users.user_id"), nullable=False)
     title = Column(String, nullable=False)
-    scheduled_time = Column(DateTime(timezone=True),
-                            default=lambda: datetime.now(timezone.utc))
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=False)
     num_questions = Column(Integer, nullable=False)
     duration_minutes = Column(Integer, nullable=False)
     status = Column(Enum(QuizStatus), default=QuizStatus.scheduled)
@@ -28,7 +28,7 @@ class Quiz(Base):
     # Relationships
     questions = relationship(
         "Question", back_populates="quiz", cascade="all, delete")
-    trainer = relationship("User", back_populates="quizzes")
+    # trainer = relationship("User", back_populates="quizzes")
 
 
 class Question(Base):
