@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
-from .routes import auth, quiz
+from .routes import auth, quiz, results, analytics
 
 
 Base.metadata.create_all(bind=engine)
@@ -23,6 +23,8 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/auth")
 app.include_router(quiz.router, prefix="/quiz")
+app.include_router(results.router, prefix="/results")
+app.include_router(analytics.router, prefix="/analytics")
 
 
 @app.get("/")

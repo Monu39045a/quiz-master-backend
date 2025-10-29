@@ -1,3 +1,4 @@
+from datetime import timezone, datetime
 from typing import List
 # from http.client import HTTPException
 from fastapi import HTTPException
@@ -17,6 +18,8 @@ router = APIRouter(tags=["quiz"])
 
 UPLOAD_DIR = "quiz_data"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+################# Quiz Endpoints #################
 
 
 @router.post("/create")
@@ -101,6 +104,8 @@ async def get_all_quizzes(
         trainer_id: str = Query(...,
                                 description="Trainer ID of the current user"),
         db: Session = Depends(get_db)):
+
+    now = datetime.now(timezone.utc)
     if role == "trainer":
         quizzes = db.query(Quiz).filter(Quiz.trainer_id == trainer_id).all()
     elif role == "participant":
@@ -108,8 +113,56 @@ async def get_all_quizzes(
     else:
         raise HTTPException(status_code=400, detail="Invalid role provided")
 
+    for quiz in quizzes:
+        if quiz.status == "scheduled" and now >= quiz.start_time:
+            quiz.status = "started"
+        elif quiz.status in ("scheduled", "started") and now >= quiz.end_time:
+            quiz.status = "completed"
+
+    db.commit()
     return quizzes
 
+
+@router.put("/start/{quiz_id}")
+async def start_quiz(
+    quiz_id: int,
+    db: Session = Depends(get_db)
+):
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    if quiz.status == "started":
+        raise HTTPException(status_code=400, detail="Quiz already started")
+    if datetime.utcnow() < quiz.start_time:
+        raise HTTPException(
+            status_code=400, detail="Quiz cannot be started before start_time")
+
+    quiz.status = "started"
+    db.commit()
+    db.refresh(quiz)
+    return {"message": "Quiz started successfully", "quiz_id": quiz.id, "status": quiz.status}
+
+
+@router.put("/end/{quiz_id}")
+async def end_quiz(
+    quiz_id: int,
+    db: Session = Depends(get_db)
+):
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    if quiz.status == "completed":
+        raise HTTPException(status_code=400, detail="Quiz already completed")
+
+    quiz.status = "completed"
+    db.commit()
+    db.refresh(quiz)
+    return {"message": "Quiz ended successfully", "quiz_id": quiz.id, "status": quiz.status}
+
+
+################# Questions Endpoints #################
 
 @router.get("/{quiz_id}/questions", response_model=List[QuestionResponse], response_model_by_alias=True)
 def get_quiz_questions(
@@ -123,7 +176,6 @@ def get_quiz_questions(
         raise HTTPException(
             status_code=404, detail="No questions found for this quiz")
 
-    # ✅ Convert JSON string options into Python list
     for q in questions:
         if isinstance(q.options, str):
             import json
